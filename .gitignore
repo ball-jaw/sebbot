@@ -1,0 +1,9 @@
+# Ignore everything by default; this repo only tracks ass2_sebbot and its
+# sebbot/ mesh dependency, not the rest of the Newpyton workspace.
+*
+
+# Un-ignore what we want tracked
+!.gitignore
+!ass2_sebbot
+!sebbot/
+!sebbot/**

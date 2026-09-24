@@ -1,0 +1,88 @@
+import os
+import numpy as np
+import swift
+
+from roboticstoolbox import DHLink, DHRobot, jtraj
+from spatialmath import SE3
+from spatialgeometry import Mesh
+
+from math import pi
+
+
+# Folder containing the exported STL meshes for each link of the robot
+LINKS_DIR = r"C:\Users\devri\Newpyton\sebbot\RS030N-B001_links"
+
+# The STL files were exported in millimetres, but the DH parameters below
+MESH_SCALE = [0.001, 0.001, 0.001]
+
+# DHLink and Define
+seblink1 = DHLink(d=0.680, a=-0.150, alpha=-pi/2, offset=0,     qlim=[-pi,pi]                 )
+seblink2 = DHLink(d=0,     a=0.870, alpha=pi,    offset=-pi/2, qlim=[-(7*pi/12),(7*pi/9)]    )
+seblink3 = DHLink(d=0,     a=0,     alpha=pi/2,  offset=pi/2,  qlim=[-(31*pi/36),(3*pi/4)]   )
+seblink4 = DHLink(d=1.080, a=0,     alpha=-pi/2, offset=0,     qlim=[-(2*pi),(2*pi)]         )
+seblink5 = DHLink(d=0,     a=0,     alpha=pi/2,  offset=0,     qlim=[-(29*pi/36),(29*pi/36)] )
+seblink6 = DHLink(d=0.165, a=0,     alpha=0,     offset=0,     qlim=[-(2*pi),(2*pi)]         )
+
+sebrobot = DHRobot([seblink1, seblink2, seblink3, seblink4, seblink5, seblink6], name="SebRobot")     # Define the Robot using above DH parameters
+sebrobot.base = SE3.Rz(-pi/2)
+
+# STL files for each link, in link order
+link_stl_files = [
+    "RS030N-B001_J1.stl",
+    "RS030N-B001_J2.stl",
+    "RS030N-B001_J3.stl",
+    "RS030N-B001_J4.stl",
+    "RS030N-B001_J5.stl",
+    "RS030N-B001_J6.stl",
+]
+base_stl_file = "RS030N-B001_Base.stl"
+
+
+T_zero = sebrobot.fkine_all([0, 0, 0, 0, 0, 0])
+
+for i, (link, filename) in enumerate(zip(sebrobot.links, link_stl_files), start=1):
+    link.geometry = [
+        Mesh(
+            filename=os.path.join(LINKS_DIR, filename),
+            scale=MESH_SCALE,
+            pose=T_zero[i].inv(),
+        )
+    ]
+
+
+base_mesh = Mesh(
+    filename=os.path.join(LINKS_DIR, base_stl_file),
+    scale=MESH_SCALE,
+    pose=sebrobot.base,
+)
+
+
+
+
+"""
+env = swift.Swift()
+env.launch(realtime=True)
+
+env.add(base_mesh)
+env.add(sebrobot)
+
+
+sebrobot.q = np.zeros(6)
+for _ in range(60):
+    env.step(0.05)
+
+
+q_start = np.zeros(6)
+q_end = np.array([pi/4, -pi/6, pi/3, pi/2, pi/4, pi/2])
+
+traj_out = jtraj(q_start, q_end, 100)
+traj_back = jtraj(q_end, q_start, 100)
+
+while True:
+    for q in traj_out.q:
+        sebrobot.q = q
+        env.step(0.05)
+    for q in traj_back.q:
+        sebrobot.q = q
+        env.step(0.05)
+"""
